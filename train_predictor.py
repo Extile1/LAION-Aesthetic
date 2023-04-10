@@ -62,13 +62,13 @@ class MLP(pl.LightningModule):
 
 # load the training data 
 
-x = np.load ("/mnt/spirit/ava_x.npy")
+x = np.load ("./ava_x_openai_clip_L14.npy")
 
-y = np.load ("/mnt/spirit/ava_y.npy")
+y = np.load ("./ava_y_openai_clip_L14.npy")
 
 val_percentage = 0.05 # 5% of the trainingdata will be used for validation
 
-train_border = int(x.shape()[0] * (1 - val_percentage) )
+train_border = int(x.shape[0] * (1 - val_percentage) )
 
 train_tensor_x = torch.Tensor(x[:train_border]) # transform to torch tensor
 train_tensor_y = torch.Tensor(y[:train_border])
@@ -107,7 +107,7 @@ epochs = 50
 
 model.train()
 best_loss =999
-save_name = "linear_predictor_L14_MSE.pth"
+save_name = "linear_predictor_L14_MSE_replicate.pth"
 
 
 for epoch in range(epochs):

@@ -30,7 +30,8 @@ from PIL import Image, ImageFile
 
 #####  This script will predict the aesthetic score for this image file:
 
-img_path = "test.jpg"
+folder_path = "../stable-diffusion/outputs/txt2img-samples/samples/"
+img_names = [f"{i:05d}.png" for i in range(0, 200, 2)]
 
 
 
@@ -91,7 +92,7 @@ def normalized(a, axis=-1, order=2):
 
 model = MLP(768)  # CLIP embedding dim is 768 for CLIP ViT L 14
 
-s = torch.load("sac+logos+ava1-l14-linearMSE.pth")   # load the model you trained previously or the model available in this repo
+s = torch.load("linear_predictor_L14_MSE_replicate.pth")   # load the model you trained previously or the model available in this repo
 
 model.load_state_dict(s)
 
@@ -102,21 +103,28 @@ model.eval()
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model2, preprocess = clip.load("ViT-L/14", device=device)  #RN50x64   
 
+with open("../stable-diffusion/prompts.txt") as f:
+    prompts = f.readlines()
 
-pil_image = Image.open(img_path)
+for i, img_name in enumerate(img_names):
+    pil_image = Image.open(folder_path + img_name)
 
-image = preprocess(pil_image).unsqueeze(0).to(device)
+    image = preprocess(pil_image).unsqueeze(0).to(device)
 
+    with torch.no_grad():
+        image_features = model2.encode_image(image)
 
+    im_emb_arr = normalized(image_features.cpu().detach().numpy() )
 
-with torch.no_grad():
-   image_features = model2.encode_image(image)
+    prediction = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
 
-im_emb_arr = normalized(image_features.cpu().detach().numpy() )
+    print( f"Aesthetic score of {img_name} predicted by the model:")
+    print( prediction )
 
-prediction = model(torch.from_numpy(im_emb_arr).to(device).type(torch.cuda.FloatTensor))
+    if len(prompts[i]) > 30:
+        prompts[i] = prompts[i][:30]
+    prompts[i] = "(slash)".join(prompts[i].split("/"))
 
-print( "Aesthetic score predicted by the model:")
-print( prediction )
+    pil_image.save(f"./labelled_images_2/{prediction[0][0]}_{prompts[i]}.png")
 
 
